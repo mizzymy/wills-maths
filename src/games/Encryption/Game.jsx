@@ -4,37 +4,72 @@ import { useGame } from '../../context/GameContext';
 import { generatePuzzle } from './PuzzleLogic';
 import Keypad from './components/Keypad';
 import CyberButton from '../../components/ui/CyberButton';
+import DifficultySelector from '../../components/ui/DifficultySelector';
 
 const EncryptionProtocol = () => {
     const navigate = useNavigate();
-    const { addBits } = useGame();
+    const { addBits, logGameSession } = useGame();
 
+    const [difficulty, setDifficulty] = useState(null);
     const [puzzle, setPuzzle] = useState(null);
     const [input, setInput] = useState('');
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(90);
-    const [gameState, setGameState] = useState('playing'); // playing, gameover
+    const [gameState, setGameState] = useState('menu'); // menu, playing, gameover
     const [feedback, setFeedback] = useState(''); // 'ACCESS GRANTED' / 'DENIED'
 
     // Audio Ref
-    const audioRef = useRef({
-        type: new Audio('/assets/audio/sfx/ui/sfx_ui_hover_master.mp3'),
-        success: new Audio('/assets/audio/sfx/breach/sfx_breach_glass_shatter.mp3'),
-        fail: new Audio('/assets/audio/sfx/runner/sfx_runner_impact_smash.mp3')
-    });
+    const typeSfx = useRef(new Audio('/assets/audio/sfx/ui/sfx_ui_hover_master.mp3'));
+    // We can reuse the UI hover as a "key tap" or generate a specific one later.
 
-    // ... (useEffect remains)
+    const startGame = (selectedDiff) => {
+        setDifficulty(selectedDiff);
+
+        // Timer Scaling
+        // 1: 120s, 2: 90s, 3: 75s, 4: 60s
+        const time = selectedDiff === 1 ? 120
+            : selectedDiff === 2 ? 90
+                : selectedDiff === 3 ? 75
+                    : 60;
+
+        setTimeLeft(time);
+        startNewRound(selectedDiff);
+        setGameState('playing');
+    };
+
+    useEffect(() => {
+        if (gameState !== 'playing') return;
+
+        const timer = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    setGameState('gameover');
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [gameState]);
+
+    const startNewRound = (diff = difficulty) => {
+        // Generate new puzzle
+        const p = generatePuzzle(diff || 1);
+        setPuzzle(p);
+        setInput('');
+        setFeedback('');
+    };
 
     const handleInput = (num) => {
         if (gameState !== 'playing') return;
         if (input.length < 5) setInput(prev => prev + num);
         // Beep
-        const clone = audioRef.current.type.cloneNode();
+        const clone = typeSfx.current.cloneNode();
         clone.volume = 0.2;
         clone.play().catch(() => { });
     };
 
-    // ... (handleClear)
+    const handleClear = () => setInput('');
 
     const handleSubmit = () => {
         if (gameState !== 'playing') return;
@@ -45,7 +80,7 @@ const EncryptionProtocol = () => {
             setScore(prev => prev + 100);
             setFeedback('ACCESS GRANTED');
             addBits(5);
-            audioRef.current.success.play().catch(() => { });
+            logGameSession('encryption_protocol', 100, { type: 'hack_success', difficulty });
 
             setTimeout(() => {
                 startNewRound();
@@ -55,15 +90,7 @@ const EncryptionProtocol = () => {
             setFeedback('ACCESS DENIED');
             setInput('');
             setTimeLeft(prev => Math.max(0, prev - 5)); // Penalty
-            audioRef.current.fail.play().catch(() => { });
         }
-    };
-
-    // Helper for flash color
-    const getFlashColor = () => {
-        if (feedback === 'ACCESS GRANTED') return 'rgba(0, 255, 0, 0.3)';
-        if (feedback === 'ACCESS DENIED') return 'rgba(255, 0, 0, 0.3)';
-        return 'transparent';
     };
 
     return (
@@ -74,18 +101,8 @@ const EncryptionProtocol = () => {
             flexDirection: 'column',
             background: '#051010', // Darker green-black
             color: '#0f0',
-            fontFamily: '"Courier New", Courier, monospace',
-            position: 'relative',
-            overflow: 'hidden'
+            fontFamily: '"Courier New", Courier, monospace'
         }}>
-            {/* Screen Flash Overlay */}
-            <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                background: getFlashColor(),
-                pointerEvents: 'none',
-                transition: 'background 0.2s',
-                zIndex: 50
-            }} />
 
             {/* Terminal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
@@ -93,45 +110,51 @@ const EncryptionProtocol = () => {
                 <div>T-{timeLeft}s</div>
             </div>
 
-            {gameState === 'playing' && puzzle ? (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {gameState === 'menu' && <DifficultySelector onSelect={startGame} />}
 
-                    {/* Logic Area */}
-                    <div style={{
-                        width: '100%',
-                        maxWidth: '500px',
-                        border: '1px solid #0f0',
-                        padding: '20px',
-                        marginBottom: '2rem',
-                        position: 'relative',
-                        background: 'rgba(0, 20, 0, 0.5)'
-                    }}>
-                        <h3 style={{ margin: '0 0 1rem 0', borderBottom: '1px solid #0f0' }}>DECRYPTION REQUIRED</h3>
-                        <div style={{ fontSize: '1.5rem', letterSpacing: '2px', textAlign: 'center' }}>
-                            {puzzle.sequence.map((val, i) => (
-                                <span key={i} style={{
-                                    margin: '0 10px',
-                                    color: val === '?' ? (input ? '#fff' : 'var(--neon-pink)') : '#0f0'
-                                }}>
-                                    {val === '?' ? (input || '?') : val}
-                                </span>
-                            ))}
-                        </div>
-                        {feedback && (
-                            <div style={{
-                                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                                background: '#000', border: '2px solid #fff', padding: '10px',
-                                color: feedback === 'ACCESS GRANTED' ? '#0ff' : 'red',
-                                fontWeight: 'bold', fontSize: '1.2rem'
-                            }}>
-                                {feedback}
+            {gameState === 'playing' ? (
+                puzzle ? (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+                        {/* Logic Area */}
+                        <div style={{
+                            width: '100%',
+                            maxWidth: '500px',
+                            border: '1px solid #0f0',
+                            padding: '20px',
+                            marginBottom: '2rem',
+                            position: 'relative',
+                            background: 'rgba(0, 20, 0, 0.5)'
+                        }}>
+                            <h3 style={{ margin: '0 0 1rem 0', borderBottom: '1px solid #0f0' }}>DECRYPTION REQUIRED</h3>
+                            <div style={{ fontSize: '1.5rem', letterSpacing: '2px', textAlign: 'center' }}>
+                                {puzzle.sequence.map((val, i) => (
+                                    <span key={i} style={{
+                                        margin: '0 10px',
+                                        color: val === '?' ? (input ? '#fff' : 'var(--neon-pink)') : '#0f0'
+                                    }}>
+                                        {val === '?' ? (input || '?') : val}
+                                    </span>
+                                ))}
                             </div>
-                        )}
+                            {feedback && (
+                                <div style={{
+                                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                    background: '#000', border: '2px solid #fff', padding: '10px',
+                                    color: feedback === 'ACCESS GRANTED' ? '#0ff' : 'red',
+                                    fontWeight: 'bold', fontSize: '1.2rem'
+                                }}>
+                                    {feedback}
+                                </div>
+                            )}
+                        </div>
+
+                        <Keypad onInput={handleInput} onClear={handleClear} onSubmit={handleSubmit} />
+
                     </div>
-
-                    <Keypad onInput={handleInput} onClear={handleClear} onSubmit={handleSubmit} />
-
-                </div>
+                ) : (
+                    <div style={{ textAlign: 'center', marginTop: '30vh', color: '#0f0' }}>INITIALIZING...</div>
+                )
             ) : (
                 <div style={{ textAlign: 'center', marginTop: '30vh' }}>
                     <h1 style={{ color: 'red' }}>SYSTEM LOCKOUT</h1>

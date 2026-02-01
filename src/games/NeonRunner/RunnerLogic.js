@@ -40,5 +40,5 @@ export const generateObstacle = (difficulty = 1) => {
         }
     }
 
-    return { lanes, id: crypto.randomUUID(), z: -100 }; // Start far back
+    return { lanes, id: Math.random().toString(36).substr(2, 9), z: -100 }; // Start far back
 };

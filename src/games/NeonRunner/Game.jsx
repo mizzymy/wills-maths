@@ -9,23 +9,27 @@ import FlushAnimation from '../../components/ui/FlushAnimation';
 import VictoryPopup from '../../components/ui/VictoryPopup';
 import CyberButton from '../../components/ui/CyberButton';
 
+import DifficultySelector from '../../components/ui/DifficultySelector';
+
 const NeonRunner = () => {
     const navigate = useNavigate();
-    const { addBits } = useGame();
+    const { addBits, logGameSession } = useGame();
 
     // -- UI State --
+    const [difficulty, setDifficulty] = useState(null); // 1-4
     const [score, setScore] = useState(0);
-    const [gameState, setGameState] = useState('playing'); // playing, gameover, victory
+    const [gameState, setGameState] = useState('menu'); // menu, playing, gameover, victory
     const [renderObstacles, setRenderObstacles] = useState([]);
     const [playerLane, setPlayerLane] = useState(1);
     const [activeQuestion, setActiveQuestion] = useState("GET READY");
     const [screenShake, setScreenShake] = useState(false);
 
     // -- Game Logic Refs --
-    const gameStateRef = useRef('playing');
-    const obstaclesRef = useRef([]); // Array of Items 
+    const gameStateRef = useRef('menu');
+    const obstaclesRef = useRef([]);
     const playerLaneRef = useRef(1);
-    const speedRef = useRef(0.3); // Base Speed (Slower start)
+    const speedRef = useRef(0.3);
+    const difficultyRef = useRef(1); // NEW
     const scoreRef = useRef(0);
     const lastSpawnZRef = useRef(0);
     const requestRef = useRef();
@@ -44,22 +48,43 @@ const NeonRunner = () => {
         sfx.play().catch(e => { });
     };
 
-    useEffect(() => {
+    const startGame = (selectedDifficulty) => {
+        setDifficulty(selectedDifficulty);
+        difficultyRef.current = selectedDifficulty; // Update ref
+
+        // Difficulty Balancing
+        // 1: 0.15, 2: 0.2, 3: 0.25, 4: 0.35
+        const baseSpeed = selectedDifficulty === 1 ? 0.15
+            : selectedDifficulty === 2 ? 0.2
+                : selectedDifficulty === 3 ? 0.25
+                    : 0.35;
+
+        speedRef.current = baseSpeed;
+
+        setGameState('playing');
         gameStateRef.current = 'playing';
+
+        // Reset Logic
         scoreRef.current = 0;
+        setScore(0);
         obstaclesRef.current = [];
         playerLaneRef.current = 1;
+        setPlayerLane(1);
+        lastSpawnZRef.current = 0;
 
         humRef.current.loop = true;
         humRef.current.volume = 0.3;
         humRef.current.play().catch(e => { });
 
         requestRef.current = requestAnimationFrame(gameLoop);
-        spawnRow(0);
+        spawnRow(selectedDifficulty, 0); // Pass diff to spawn
 
         window.addEventListener('keydown', handleInput);
+    };
+
+    useEffect(() => {
         return () => {
-            cancelAnimationFrame(requestRef.current);
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
             window.removeEventListener('keydown', handleInput);
             humRef.current.pause();
         };
@@ -88,10 +113,11 @@ const NeonRunner = () => {
         playSfx('score');
         humRef.current.pause();
         addBits(score); // Bank the bits
+        logGameSession('neon_runner', score, { result: 'victory', difficulty });
     };
 
-    const spawnRow = (startZ = -100) => {
-        const rowData = generateObstacle(1);
+    const spawnRow = (diff, startZ = -100) => {
+        const rowData = generateObstacle(diff);
         const correct = rowData.lanes.find(l => l.type === 'correct');
         const label = correct.label;
 
@@ -120,7 +146,7 @@ const NeonRunner = () => {
         // 2. Spawn
         lastSpawnZRef.current += speedRef.current;
         if (lastSpawnZRef.current > -40) {
-            spawnRow(-110);
+            spawnRow(difficultyRef.current, -110);
         }
 
         // 3. Update HUD Question
@@ -155,6 +181,7 @@ const NeonRunner = () => {
                         playSfx('crash');
                         setScreenShake(true);
                         humRef.current.pause();
+                        logGameSession('neon_runner', score, { result: 'crash', difficulty });
                     }
                 }
             }
@@ -185,9 +212,12 @@ const NeonRunner = () => {
                 else moveLane(1);
             }}
         >
+            {gameState === 'menu' && <DifficultySelector onSelect={startGame} />}
+
             <div style={{
                 width: '100%', height: '100%',
-                animation: screenShake ? 'shake 0.5s' : 'none'
+                animation: screenShake ? 'shake 0.5s' : 'none',
+                opacity: gameState === 'menu' ? 0.3 : 1
             }}>
                 <style>{`
             @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 100% { transform: translate(0,0); } }

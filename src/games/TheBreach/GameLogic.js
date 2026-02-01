@@ -28,8 +28,8 @@ export const generateLevel = (level = 1) => {
         let ValB = target - ValA;
 
         // Add pair to grid
-        nodes.push({ id: crypto.randomUUID(), value: ValA, type: 'standard' });
-        nodes.push({ id: crypto.randomUUID(), value: ValB, type: 'standard' });
+        nodes.push({ id: Math.random().toString(36).substr(2, 9), value: ValA, type: 'standard' });
+        nodes.push({ id: Math.random().toString(36).substr(2, 9), value: ValB, type: 'standard' });
         solvableCount -= 2;
     }
 
@@ -37,7 +37,7 @@ export const generateLevel = (level = 1) => {
     for (let i = 0; i < noiseCount; i++) {
         // Random numbers that likely don't sum perfectly with others instantly
         let val = Math.floor(Math.random() * target) + 1;
-        nodes.push({ id: crypto.randomUUID(), value: val, type: 'noise' });
+        nodes.push({ id: Math.random().toString(36).substr(2, 9), value: val, type: 'noise' });
     }
 
     // Shuffle

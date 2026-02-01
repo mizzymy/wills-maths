@@ -53,5 +53,5 @@ export const generatePuzzle = (difficulty = 1) => {
     answer = sequence[missingIndex];
     sequence[missingIndex] = '?';
 
-    return { type, sequence, answer, id: crypto.randomUUID() };
+    return { type, sequence, answer, id: Math.random().toString(36).substr(2, 9) };
 };

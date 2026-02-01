@@ -4,29 +4,26 @@ import { useGame } from '../../context/GameContext';
 import { generateLevel, checkSolution } from './GameLogic';
 import HexGrid from './components/HexGrid';
 import CyberButton from '../../components/ui/CyberButton';
+import DifficultySelector from '../../components/ui/DifficultySelector';
 
 const TheBreach = () => {
     const navigate = useNavigate();
-    const { addBits } = useGame();
+    const { addBits, logGameSession } = useGame();
 
     // Game State
+    const [difficulty, setDifficulty] = useState(null);
     const [target, setTarget] = useState(10);
     const [nodes, setNodes] = useState([]);
     const [selectedNodes, setSelectedNodes] = useState([]);
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(60);
-    const [gameState, setGameState] = useState('playing'); // playing, gameover
+    const [gameState, setGameState] = useState('menu'); // menu, playing, gameover
 
     // Audio Refs (Quick implementation)
     const bgmRef = useRef(new Audio('/assets/audio/bgm/bgm_breach_flow.mp3'));
 
     // Init Level
     useEffect(() => {
-        startNewRound();
-        bgmRef.current.loop = true;
-        bgmRef.current.volume = 0.4;
-        bgmRef.current.play().catch(e => console.log('BGM Autoplay blocked'));
-
         return () => {
             bgmRef.current.pause();
             bgmRef.current.currentTime = 0;
@@ -47,6 +44,32 @@ const TheBreach = () => {
         }, 1000);
         return () => clearInterval(timer);
     }, [gameState]);
+
+    const startGame = (selectedDiff) => {
+        setDifficulty(selectedDiff);
+
+        // Timer Scaling
+        // 1: 90s, 2: 60s, 3: 45s, 4: 30s
+        const time = selectedDiff === 1 ? 90
+            : selectedDiff === 2 ? 60
+                : selectedDiff === 3 ? 45
+                    : 30;
+
+        setTimeLeft(time);
+
+        // Start Audio
+        bgmRef.current.loop = true;
+        bgmRef.current.volume = 0.4;
+        bgmRef.current.play().catch(e => console.log('BGM Autoplay blocked'));
+
+        setGameState('playing');
+
+        // Generate Board
+        const levelData = generateLevel(1);
+        setTarget(levelData.target);
+        setNodes(levelData.nodes);
+        setSelectedNodes([]);
+    };
 
     const startNewRound = () => {
         // Regenerate nodes if low, or just keep same target
@@ -115,6 +138,7 @@ const TheBreach = () => {
 
     const endGame = () => {
         setGameState('gameover');
+        logGameSession('the_breach', score, { difficulty });
     };
 
     return (
@@ -132,6 +156,8 @@ const TheBreach = () => {
                     SCORE: {score}
                 </div>
             </div>
+
+            {gameState === 'menu' && <DifficultySelector onSelect={startGame} />}
 
             {gameState === 'playing' ? (
                 <>

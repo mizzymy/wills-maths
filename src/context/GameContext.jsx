@@ -15,6 +15,26 @@ export const GameProvider = ({ children }) => {
         return localStorage.getItem('wm-rank') || 'Rookie';
     });
 
+    const [lastLogin, setLastLogin] = useState(() => {
+        return localStorage.getItem('wm-last-login') || '';
+    });
+
+    const checkDailyReward = () => {
+        const today = new Date().toDateString();
+        if (lastLogin !== today) {
+            return true; // Reward is available
+        }
+        return false;
+    };
+
+    const claimDailyReward = () => {
+        const today = new Date().toDateString();
+        setLastLogin(today);
+        localStorage.setItem('wm-last-login', today);
+        addBits(100); // 100 Bits Daily Bonus
+        return 100;
+    };
+
     useEffect(() => {
         localStorage.setItem('wm-bits', bits);
     }, [bits]);
@@ -27,11 +47,79 @@ export const GameProvider = ({ children }) => {
         setBits(prev => prev + amount);
     };
 
+    // -- Parental Control State --
+    const [parentPin, setParentPin] = useState(() => localStorage.getItem('wm-pin') || '0000');
+
+    const [history, setHistory] = useState(() => {
+        const saved = localStorage.getItem('wm-history');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const [missions, setMissions] = useState(() => {
+        const saved = localStorage.getItem('wm-missions');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    // Persistence
+    useEffect(() => { localStorage.setItem('wm-pin', parentPin); }, [parentPin]);
+    useEffect(() => { localStorage.setItem('wm-history', JSON.stringify(history)); }, [history]);
+    useEffect(() => { localStorage.setItem('wm-missions', JSON.stringify(missions)); }, [missions]);
+
+    // -- Analytics Logic --
+    const logGameSession = (gameId, score, details = {}) => {
+        const entry = {
+            id: Date.now(),
+            date: new Date().toISOString(),
+            gameId,
+            score,
+            ...details // { correct: 5, wrong: 1, etc }
+        };
+
+        setHistory(prev => [entry, ...prev]);
+
+        // Check Missions
+        checkMissions('play', 1, gameId);
+        checkMissions('score_cumulative', score, gameId);
+    };
+
+    // -- Mission Logic --
+    const addMission = (mission) => {
+        // mission: { id, title, type: 'score_cumulative', target: 500, current: 0, reward: 'Pizza', icon: 'pizza', redeemed: false }
+        setMissions(prev => [...prev, { ...mission, id: Date.now(), current: 0, redeemed: false }]);
+    };
+
+    const checkMissions = (type, amount, gameFilter = null) => {
+        setMissions(prev => prev.map(m => {
+            if (m.redeemed) return m;
+            if (m.type !== type) return m;
+
+            // Critical filter: If mission is tied to a specific game, ignore events from other games
+            if (m.gameId && m.gameId !== 'any' && m.gameId !== gameFilter) return m;
+
+            const newCurrent = m.current + amount;
+            return { ...m, current: newCurrent };
+        }));
+    };
+
+    const redeemMission = (id) => {
+        setMissions(prev => prev.map(m => m.id === id ? { ...m, redeemed: true } : m));
+    };
+
     const value = {
         bits,
         rank,
         addBits,
-        setRank
+        setRank,
+        checkDailyReward,
+        claimDailyReward,
+        // Parent Props
+        parentPin,
+        setParentPin,
+        history,
+        logGameSession,
+        missions,
+        addMission,
+        redeemMission
     };
 
     return (
