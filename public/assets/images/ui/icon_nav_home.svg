@@ -1,0 +1,7 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M32 4L4 28H10V56H24V40H40V56H54V28H60L32 4Z" stroke="#ff2a6d" stroke-width="3" fill="none"/>
+<path d="M24 56V40H40V56" stroke="#ff2a6d" stroke-width="3"/>
+<rect x="10" y="28" width="44" height="28" stroke="#ff2a6d" stroke-width="1" stroke-dasharray="4 4" opacity="0.5"/>
+<filter id="glow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<style>path { filter: url(#glow); }</style>
+</svg>

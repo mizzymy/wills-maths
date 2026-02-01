@@ -1,0 +1,7 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M8 8H16L20 44H56L60 16H18" stroke="#f0f600" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="24" cy="54" r="5" stroke="#f0f600" stroke-width="3"/>
+<circle cx="52" cy="54" r="5" stroke="#f0f600" stroke-width="3"/>
+<filter id="glow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<style>path, circle { filter: url(#glow); }</style>
+</svg>
