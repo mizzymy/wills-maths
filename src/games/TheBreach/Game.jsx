@@ -48,12 +48,12 @@ const TheBreach = () => {
     const startGame = (selectedDiff) => {
         setDifficulty(selectedDiff);
 
-        // Timer Scaling
-        // 1: 90s, 2: 60s, 3: 45s, 4: 30s
-        const time = selectedDiff === 1 ? 90
-            : selectedDiff === 2 ? 60
-                : selectedDiff === 3 ? 45
-                    : 30;
+        // Timer Scaling (Increased by 15%)
+        // 1: 104s, 2: 69s, 3: 52s, 4: 35s
+        const time = selectedDiff === 1 ? 104
+            : selectedDiff === 2 ? 69
+                : selectedDiff === 3 ? 52
+                    : 35;
 
         setTimeLeft(time);
 
@@ -65,7 +65,7 @@ const TheBreach = () => {
         setGameState('playing');
 
         // Generate Board
-        const levelData = generateLevel(1);
+        const levelData = generateLevel(selectedDiff);
         setTarget(levelData.target);
         setNodes(levelData.nodes);
         setSelectedNodes([]);
@@ -77,7 +77,7 @@ const TheBreach = () => {
         // Let's keep it simple: One "Round" is one board for now, or endless refill.
         // Endless refill is better for "Flow".
 
-        const levelData = generateLevel(1);
+        const levelData = generateLevel(difficulty || 1);
         setTarget(levelData.target);
         setNodes(levelData.nodes);
         setSelectedNodes([]);
@@ -89,7 +89,7 @@ const TheBreach = () => {
                 type === 'select' ? '/assets/audio/sfx/breach/sfx_breach_node_select.mp3' : ''
         );
         sfx.volume = 0.6;
-        sfx.play();
+        sfx.play().catch(() => { }); // Silent catch for SFX errors
     };
 
     const handleNodeClick = (node) => {
@@ -122,12 +122,10 @@ const TheBreach = () => {
             setSelectedNodes([]);
 
             // If board empty or low, refill
-            if (remainingNodes.length < 4) {
-                // Add new batch (simple merge)
-                const nextLevel = generateLevel(1);
+            if (remainingNodes.length < 6) {
+                // Add new batch (simple merge) - KEEP SAME TARGET
+                const nextLevel = generateLevel(difficulty, target);
                 setNodes([...remainingNodes, ...nextLevel.nodes]);
-                // Update target maybe? For now keep same target until cleared or swap
-                setTarget(nextLevel.target);
             }
         } else if (result.reason === 'overflow') {
             // Wrong combo
@@ -138,8 +136,13 @@ const TheBreach = () => {
 
     const endGame = () => {
         setGameState('gameover');
-        logGameSession('the_breach', score, { difficulty });
     };
+
+    useEffect(() => {
+        if (gameState === 'gameover') {
+            logGameSession('the_breach', score, { difficulty });
+        }
+    }, [gameState]);
 
     return (
         <div style={{ padding: '1rem', textAlign: 'center', height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -181,7 +184,7 @@ const TheBreach = () => {
                     </div>
 
                     {/* Grid */}
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '2rem' }}>
                         <HexGrid
                             nodes={nodes}
                             selectedNodes={selectedNodes}

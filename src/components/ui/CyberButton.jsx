@@ -20,7 +20,11 @@ const CyberButton = ({
         // Ideally we preload these
         const audio = new Audio(audioPath);
         audio.volume = 0.5;
-        audio.play().catch(e => console.log('Audio play failed (interaction needed first)', e));
+        audio.play().catch(e => {
+            // Silence "Interrupted" or "Not Supported" errors to prevent console spam
+            if (e.name === 'NotAllowedError' || e.name === 'NotSupportedError') return;
+            console.warn('Audio play failed:', e);
+        });
     };
 
     const handleMouseEnter = () => {

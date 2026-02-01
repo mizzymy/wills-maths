@@ -5,12 +5,18 @@ export const BASE_SPEED = 10;
 export const SPEED_INCREMENT = 0.5;
 
 // Math Questions Generator
+// Math Questions Generator
 export const generateObstacle = (difficulty = 1) => {
-    // Simple Multiplication (2x to 12x tables)
-    const maxFactor = difficulty === 1 ? 5 : difficulty === 2 ? 9 : 12;
+    // KS2 Difficulty Tiers
+    let validTables = [];
 
-    const factorA = Math.floor(Math.random() * maxFactor) + 2;
-    const factorB = Math.floor(Math.random() * 10) + 1;
+    if (difficulty === 1) validTables = [1, 2, 3];
+    else if (difficulty === 2) validTables = [4, 5, 6, 10];
+    else if (difficulty === 3) validTables = [7, 8, 9, 11, 12];
+    else validTables = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // Elite
+
+    const factorA = validTables[Math.floor(Math.random() * validTables.length)];
+    const factorB = Math.floor(Math.random() * 12) + 1; // 1 to 12
     const correctAnswer = factorA * factorB;
 
     // Generate distractors (answers that are close)

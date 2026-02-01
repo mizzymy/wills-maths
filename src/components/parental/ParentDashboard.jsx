@@ -82,8 +82,8 @@ const ParentDashboard = ({ onClose }) => {
 
                     <h3>RECENT LOGS</h3>
                     <div style={{ maxHeight: '300px', overflowY: 'auto', background: '#000', padding: '10px' }}>
-                        {history.slice(0, 20).map(entry => (
-                            <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #222', padding: '5px 0' }}>
+                        {history.slice(0, 20).map((entry, idx) => (
+                            <div key={`${entry.id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #222', padding: '5px 0' }}>
                                 <span style={{ color: '#aaa' }}>{new Date(entry.date).toLocaleDateString()}</span>
                                 <span style={{ color: 'var(--neon-yellow)' }}>{entry.gameId}</span>
                                 <span style={{ fontWeight: 'bold' }}>{entry.score} pts</span>

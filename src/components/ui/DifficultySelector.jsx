@@ -8,7 +8,9 @@ const LEVELS = [
     { id: 4, label: 'ELITE', color: 'var(--neon-red)', desc: 'Maximum Velocity. Chaos Mode. 50% Time.' }
 ];
 
-const DifficultySelector = ({ onSelect }) => {
+const DifficultySelector = ({ onSelect, customLevels }) => {
+    const levelsToRender = customLevels || LEVELS;
+
     return (
         <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -25,7 +27,7 @@ const DifficultySelector = ({ onSelect }) => {
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px' }}>
-                {LEVELS.map(lvl => (
+                {levelsToRender.map(lvl => (
                     <button
                         key={lvl.id}
                         onClick={() => onSelect(lvl.id)}

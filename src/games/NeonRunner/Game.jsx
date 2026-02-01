@@ -212,7 +212,17 @@ const NeonRunner = () => {
                 else moveLane(1);
             }}
         >
-            {gameState === 'menu' && <DifficultySelector onSelect={startGame} />}
+            {gameState === 'menu' && (
+                <DifficultySelector
+                    onSelect={startGame}
+                    customLevels={[
+                        { id: 1, label: 'ROOKIE', color: 'var(--neon-green)', desc: 'Tables: 1, 2, 3. Extended Time.' },
+                        { id: 2, label: 'AGENT', color: 'var(--neon-cyan)', desc: 'Tables: 4, 5, 6, 10. Standard Speed.' },
+                        { id: 3, label: 'VETERAN', color: 'var(--neon-purple)', desc: 'Tables: 7, 8, 9, 11, 12. Fast Paced.' },
+                        { id: 4, label: 'ELITE', color: 'var(--neon-red)', desc: 'ALL TABLES (1-12). Maximum Velocity.' }
+                    ]}
+                />
+            )}
 
             <div style={{
                 width: '100%', height: '100%',
