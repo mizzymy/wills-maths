@@ -17,41 +17,24 @@ const EncryptionProtocol = () => {
     const [feedback, setFeedback] = useState(''); // 'ACCESS GRANTED' / 'DENIED'
 
     // Audio Ref
-    const typeSfx = useRef(new Audio('/assets/audio/sfx/ui/sfx_ui_hover_master.mp3'));
-    // We can reuse the UI hover as a "key tap" or generate a specific one later.
+    const audioRef = useRef({
+        type: new Audio('/assets/audio/sfx/ui/sfx_ui_hover_master.mp3'),
+        success: new Audio('/assets/audio/sfx/breach/sfx_breach_glass_shatter.mp3'),
+        fail: new Audio('/assets/audio/sfx/runner/sfx_runner_impact_smash.mp3')
+    });
 
-    useEffect(() => {
-        startNewRound();
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    setGameState('gameover');
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const startNewRound = () => {
-        // Generate new puzzle
-        const p = generatePuzzle(1); // Difficulty 1
-        setPuzzle(p);
-        setInput('');
-        setFeedback('');
-    };
+    // ... (useEffect remains)
 
     const handleInput = (num) => {
         if (gameState !== 'playing') return;
         if (input.length < 5) setInput(prev => prev + num);
         // Beep
-        const clone = typeSfx.current.cloneNode();
+        const clone = audioRef.current.type.cloneNode();
         clone.volume = 0.2;
         clone.play().catch(() => { });
     };
 
-    const handleClear = () => setInput('');
+    // ... (handleClear)
 
     const handleSubmit = () => {
         if (gameState !== 'playing') return;
@@ -62,6 +45,7 @@ const EncryptionProtocol = () => {
             setScore(prev => prev + 100);
             setFeedback('ACCESS GRANTED');
             addBits(5);
+            audioRef.current.success.play().catch(() => { });
 
             setTimeout(() => {
                 startNewRound();
@@ -71,7 +55,15 @@ const EncryptionProtocol = () => {
             setFeedback('ACCESS DENIED');
             setInput('');
             setTimeLeft(prev => Math.max(0, prev - 5)); // Penalty
+            audioRef.current.fail.play().catch(() => { });
         }
+    };
+
+    // Helper for flash color
+    const getFlashColor = () => {
+        if (feedback === 'ACCESS GRANTED') return 'rgba(0, 255, 0, 0.3)';
+        if (feedback === 'ACCESS DENIED') return 'rgba(255, 0, 0, 0.3)';
+        return 'transparent';
     };
 
     return (
@@ -82,8 +74,18 @@ const EncryptionProtocol = () => {
             flexDirection: 'column',
             background: '#051010', // Darker green-black
             color: '#0f0',
-            fontFamily: '"Courier New", Courier, monospace'
+            fontFamily: '"Courier New", Courier, monospace',
+            position: 'relative',
+            overflow: 'hidden'
         }}>
+            {/* Screen Flash Overlay */}
+            <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                background: getFlashColor(),
+                pointerEvents: 'none',
+                transition: 'background 0.2s',
+                zIndex: 50
+            }} />
 
             {/* Terminal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>

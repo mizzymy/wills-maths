@@ -5,6 +5,8 @@ import { generateObstacle, LANE_COUNT } from './RunnerLogic';
 import Player from './components/Player';
 import Track from './components/Track';
 import Obstacle from './components/Obstacle';
+import FlushAnimation from '../../components/ui/FlushAnimation';
+import VictoryPopup from '../../components/ui/VictoryPopup';
 import CyberButton from '../../components/ui/CyberButton';
 
 const NeonRunner = () => {
@@ -13,7 +15,7 @@ const NeonRunner = () => {
 
     // -- UI State --
     const [score, setScore] = useState(0);
-    const [gameState, setGameState] = useState('playing');
+    const [gameState, setGameState] = useState('playing'); // playing, gameover, victory
     const [renderObstacles, setRenderObstacles] = useState([]);
     const [playerLane, setPlayerLane] = useState(1);
     const [activeQuestion, setActiveQuestion] = useState("GET READY");
@@ -27,8 +29,6 @@ const NeonRunner = () => {
     const scoreRef = useRef(0);
     const lastSpawnZRef = useRef(0);
     const requestRef = useRef();
-
-    // Track the 'current' question being solved (the one closest to player)
     const currentQuestionRef = useRef("GET READY");
 
     // Audio Refs
@@ -80,14 +80,21 @@ const NeonRunner = () => {
         }
     };
 
+    const handleEject = () => {
+        if (gameStateRef.current !== 'playing') return;
+
+        gameStateRef.current = 'victory';
+        setGameState('victory');
+        playSfx('score');
+        humRef.current.pause();
+        addBits(score); // Bank the bits
+    };
+
     const spawnRow = (startZ = -100) => {
         const rowData = generateObstacle(1);
         const correct = rowData.lanes.find(l => l.type === 'correct');
-
-        // Store label in the obstacles themselves so we can retrieve it later
         const label = correct.label;
 
-        // Create 3 Obstacles
         const newItems = rowData.lanes.map((laneData, idx) => ({
             id: rowData.id + '_' + idx,
             lane: idx,
@@ -95,7 +102,7 @@ const NeonRunner = () => {
             type: laneData.type,
             z: startZ,
             hit: false,
-            questionLabel: label // Attach the question directly to the object
+            questionLabel: label
         }));
 
         obstaclesRef.current = [...obstaclesRef.current, ...newItems];
@@ -140,14 +147,14 @@ const NeonRunner = () => {
                     if (obs.type === 'correct') {
                         playSfx('score');
                         setScore(s => s + 10);
-                        // Very slow ramp up. 0.3 -> 0.6 over 30 hits. 
-                        // (0.3 gap / 30 = 0.01 per hit)
+                        // Slow ramp up
                         speedRef.current += 0.01;
                     } else {
                         gameStateRef.current = 'gameover';
                         setGameState('gameover');
                         playSfx('crash');
                         setScreenShake(true);
+                        humRef.current.pause();
                     }
                 }
             }
@@ -170,6 +177,9 @@ const NeonRunner = () => {
                 overflow: 'hidden'
             }}
             onClick={(e) => {
+                // Ignore clicks on UI buttons
+                if (e.target.tagName === 'BUTTON') return;
+
                 if (gameState !== 'playing') return;
                 if (e.clientX < window.innerWidth / 2) moveLane(-1);
                 else moveLane(1);
@@ -186,6 +196,8 @@ const NeonRunner = () => {
                 {/* HUD */}
                 <div style={{ position: 'absolute', top: 20, width: '100%', textAlign: 'center', zIndex: 100 }}>
                     <div className="neon-text-pink" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{score}</div>
+
+                    {/* Active Question Box */}
                     <div style={{
                         background: 'rgba(0,0,0,0.8)', border: '2px solid var(--neon-cyan)',
                         padding: '10px 30px', display: 'inline-block', borderRadius: '20px', marginTop: '10px'
@@ -195,6 +207,11 @@ const NeonRunner = () => {
                             {activeQuestion}
                         </span>
                     </div>
+
+                    {/* EJECT Button */}
+                    <div style={{ position: 'absolute', top: 0, right: 20 }}>
+                        <CyberButton variant="glitch" onClick={handleEject}>EJECT</CyberButton>
+                    </div>
                 </div>
 
                 <Track />
@@ -202,17 +219,34 @@ const NeonRunner = () => {
                 {renderObstacles.map(obs => <Obstacle key={obs.id} data={obs} />)}
             </div>
 
+            {/* Victory / Success Screen */}
+            {gameState === 'victory' && (
+                <VictoryPopup
+                    type={score > 50 ? 'achievement' : 'success'}
+                    score={score}
+                    onContinue={() => window.location.reload()}
+                    onHome={() => navigate('/')}
+                />
+            )}
+
+            {/* Game Over Screen */}
             {gameState === 'gameover' && (
                 <div style={{
                     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.9)', zIndex: 200,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
                 }}>
-                    <h1 className="neon-text-pink">CRASHED</h1>
-                    <p>FINAL SCORE: {score}</p>
-                    <CyberButton variant="primary" onClick={() => window.location.reload()}>RETRY</CyberButton>
-                    <br />
-                    <CyberButton variant="glitch" onClick={() => navigate('/')}>QUIT</CyberButton>
+                    <div style={{ marginBottom: '20px' }}>
+                        <FlushAnimation onComplete={() => console.log("Flush Complete")} />
+                    </div>
+
+                    <h1 className="neon-text-pink" style={{ marginTop: '-50px', zIndex: 100 }}>WASTED</h1>
+                    <p style={{ zIndex: 100 }}>FINAL SCORE: {score}</p>
+
+                    <div style={{ zIndex: 100, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <CyberButton variant="primary" onClick={() => window.location.reload()}>RETRY</CyberButton>
+                        <CyberButton variant="glitch" onClick={() => navigate('/')}>QUIT</CyberButton>
+                    </div>
                 </div>
             )}
         </div>

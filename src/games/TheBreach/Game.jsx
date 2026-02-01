@@ -139,10 +139,11 @@ const TheBreach = () => {
                     <div style={{ marginBottom: '2rem' }}>
                         <div style={{ color: '#aaa', letterSpacing: '2px' }}>TARGET SUM</div>
                         <div style={{
-                            fontSize: '4rem',
+                            fontSize: 'clamp(3rem, 10vw, 5rem)', // Responsive sizing
                             fontWeight: '900',
                             color: 'white',
-                            textShadow: '0 0 20px var(--neon-pink)'
+                            textShadow: '0 0 20px var(--neon-pink)',
+                            lineHeight: 1
                         }}>
                             {target}
                         </div>

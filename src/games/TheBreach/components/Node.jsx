@@ -18,12 +18,12 @@ const Node = ({ node, isSelected, onClick }) => {
             whileTap={{ scale: 0.9 }}
             onClick={() => onClick(node)}
             style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '10px', // Slightly rounded hex-ish feel
+                width: '100%',
+                aspectRatio: '1',
+                borderRadius: '12px',
                 border: '2px solid',
                 color: 'white',
-                fontSize: '2rem',
+                fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', // Scales with valid range
                 fontWeight: 'bold',
                 fontFamily: 'var(--font-mono)',
                 cursor: 'pointer',

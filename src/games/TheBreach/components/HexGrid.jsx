@@ -7,10 +7,11 @@ const HexGrid = ({ nodes, selectedNodes, onNodeClick }) => {
         <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '1rem',
-            maxWidth: '400px',
+            gap: '10px',
+            width: '100%',
+            maxWidth: '500px', // Cap for tablet/desktop
             margin: '0 auto',
-            padding: '1rem'
+            padding: '10px'
         }}>
             <AnimatePresence>
                 {nodes.map(node => (

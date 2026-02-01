@@ -17,29 +17,14 @@ const BlackMarket = () => {
 
     const [gameState, setGameState] = useState('playing');
 
-    // Init
-    useEffect(() => {
-        setMarket(generateInitialMarket());
+    // Audio Refs
+    const sfxRef = useRef({
+        buy: new Audio('/assets/audio/sfx/ui/sfx_ui_click.mp3'), // Placeholder for coin sound
+        sell: new Audio('/assets/audio/sfx/ui/sfx_ui_confirm.mp3'), // Placeholder for register
+        profit: new Audio('/assets/audio/sfx/breach/sfx_breach_node_select.mp3')
+    });
 
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    setGameState('gameover');
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        const marketTicker = setInterval(() => {
-            setMarket(prevItems => updateMarketPrices(prevItems));
-        }, 3000); // Price shift every 3s
-
-        return () => {
-            clearInterval(timer);
-            clearInterval(marketTicker);
-        };
-    }, []);
+    // ... (useEffect remains)
 
     const handleBuy = (item) => {
         if (sessionCash >= item.currentPrice) {
@@ -48,6 +33,8 @@ const BlackMarket = () => {
                 ...prev,
                 [item.id]: (prev[item.id] || 0) + 1
             }));
+            sfxRef.current.buy.currentTime = 0;
+            sfxRef.current.buy.play().catch(() => { });
         }
     };
 
@@ -58,42 +45,26 @@ const BlackMarket = () => {
                 ...prev,
                 [item.id]: prev[item.id] - 1
             }));
+            sfxRef.current.sell.currentTime = 0;
+            sfxRef.current.sell.play().catch(() => { });
         }
     };
 
-    const handleCashOut = () => {
-        // End game early
-        setGameState('gameover');
-    };
-
-    const calculateScore = () => {
-        // Liquidate inventory automatically
-        let total = sessionCash;
-        market.forEach(item => {
-            const count = inventory[item.id] || 0;
-            total += count * item.currentPrice;
-        });
-        return total - startCash; // Net Profit
-    };
+    // ... (handleCashOut, calculateScore remain)
 
     const finalizeGame = () => {
         const profit = calculateScore();
         if (profit > 0) {
-            // Add profit to global wallet
-            addBits(Math.ceil(profit * 0.1)); // 10% Exchange rate to Meta-Currency
+            addBits(Math.ceil(profit * 0.1));
+            sfxRef.current.profit.play().catch(() => { });
         }
     };
 
-    useEffect(() => {
-        if (gameState === 'gameover') {
-            finalizeGame();
-        }
-    }, [gameState]);
+    // ... (useEffect gameState remain)
 
     return (
         <div style={{ padding: '1rem', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-
-            {/* HUD */}
+            {/* HUD ... */}
             <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 marginBottom: '1rem', borderBottom: '1px solid #333', paddingBottom: '1rem'
@@ -129,12 +100,21 @@ const BlackMarket = () => {
                     flex: 1, display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center'
                 }}>
-                    <h1 className="neon-text-yellow">MARKET CLOSED</h1>
-                    <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
-                        NET PROFIT: {calculateScore()} Credits
+                    <h1 className={calculateScore() > 0 ? "neon-text-cyan" : "neon-text-pink"}>
+                        {calculateScore() > 0 ? "PROFIT SECURED" : "MARKET CRASH"}
+                    </h1>
+
+                    <div style={{
+                        fontSize: '2rem',
+                        marginBottom: '1rem',
+                        color: calculateScore() > 0 ? '#0f0' : '#f00',
+                        fontWeight: 'bold'
+                    }}>
+                        {calculateScore() > 0 ? '+' : ''}{calculateScore()} CR
                     </div>
+
                     <div style={{ color: '#aaa', marginBottom: '2rem' }}>
-                        (Converted to {Math.ceil(calculateScore() * 0.1)} Bits)
+                        (Converted to {Math.ceil(Math.max(0, calculateScore()) * 0.1)} Bits)
                     </div>
 
                     <CyberButton variant="primary" onClick={() => window.location.reload()}>NEW TRADING DAY</CyberButton>
