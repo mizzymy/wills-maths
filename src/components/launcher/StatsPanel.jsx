@@ -27,6 +27,8 @@ const StatsPanel = () => {
     return (
         <div style={{
             display: 'flex',
+            flexWrap: 'wrap', // Responsive wrapping
+            gap: '15px', // Spacing when wrapped
             alignItems: 'center',
             justifyContent: 'space-between',
             background: 'var(--bg-panel)',

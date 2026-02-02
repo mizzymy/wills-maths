@@ -115,12 +115,13 @@ const ParentDashboard = ({ onClose }) => {
                             background: m.redeemed ? '#131' : '#111',
                             padding: '15px', marginBottom: '10px',
                             borderLeft: `4px solid ${m.redeemed ? '#0f0' : 'var(--neon-pink)'}`,
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                            display: 'flex', flexWrap: 'wrap', gap: '10px', // Allow wrapping
+                            justifyContent: 'space-between', alignItems: 'center'
                         }}>
-                            <div>
+                            <div style={{ flex: 1, minWidth: '200px' }}> {/* Allow growing */}
                                 <h4 style={{ margin: 0 }}>{m.title}</h4>
                                 <p style={{ margin: 0, color: '#888' }}>Target: {m.target} pts</p>
-                                <div style={{ background: '#333', height: '5px', width: '200px', marginTop: '5px' }}>
+                                <div style={{ background: '#333', height: '5px', width: '100%', marginTop: '5px' }}> {/* Fluid width */}
                                     <div style={{
                                         height: '100%',
                                         width: `${Math.min(100, (m.current / m.target) * 100)}%`,

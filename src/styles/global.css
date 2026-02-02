@@ -8,7 +8,7 @@
   --neon-yellow: #f0f600;
   --bg-dark: #050505;
   --bg-panel: #1a1a1a;
-  
+
   --font-main: 'Inter', sans-serif;
   --font-mono: 'Roboto Mono', monospace;
 }
@@ -20,6 +20,12 @@ body {
   font-family: var(--font-main);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 #root {
