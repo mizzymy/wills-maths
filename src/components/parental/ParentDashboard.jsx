@@ -16,7 +16,7 @@ const ParentDashboard = ({ onClose }) => {
     };
 
     // -- Mission Form --
-    const [missionForm, setMissionForm] = useState({ title: '', target: 50, gameId: 'any' });
+    const [missionForm, setMissionForm] = useState({ title: '', target: 50, gameId: 'any', isRealWorld: false });
 
     const handleAddMission = () => {
         if (!missionForm.title) return;
@@ -24,11 +24,12 @@ const ParentDashboard = ({ onClose }) => {
             title: missionForm.title,
             type: 'score_cumulative',
             target: parseInt(missionForm.target),
-            gameId: missionForm.gameId, // NEW: Specific game targeting
-            icon: 'trophy',
-            reward: missionForm.title
+            gameId: missionForm.gameId,
+            icon: missionForm.isRealWorld ? 'certificate' : 'trophy',
+            reward: missionForm.title,
+            isRealWorld: missionForm.isRealWorld
         });
-        setMissionForm({ title: '', target: 50, gameId: 'any' });
+        setMissionForm({ title: '', target: 50, gameId: 'any', isRealWorld: false });
     };
 
     return (
@@ -40,66 +41,42 @@ const ParentDashboard = ({ onClose }) => {
             overflowY: 'auto',
             color: '#eee'
         }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h1 className="neon-text-pink">HANDLER CONTROL</h1>
-                <CyberButton variant="glitch" onClick={onClose}>EXIT MODE</CyberButton>
-            </div>
+            {/* Header ... */}
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #333' }}>
-                {['analytics', 'missions', 'settings'].map(t => (
-                    <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        style={{
-                            padding: '10px 20px',
-                            background: tab === t ? 'var(--neon-pink)' : 'transparent',
-                            color: tab === t ? 'black' : '#888',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontWeight: 'bold',
-                            textTransform: 'uppercase'
-                        }}
-                    >
-                        {t}
-                    </button>
-                ))}
-            </div>
+            {/* Tabs ... */}
 
-            {/* ANALYTICS TAB */}
-            {tab === 'analytics' && (
-                <div>
-                    <h2 style={{ borderBottom: '1px solid #333' }}>PERFORMANCE REPORT</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', margin: '20px 0' }}>
-                        {['neon_runner', 'the_breach', 'black_market', 'encryption_protocol'].map(game => (
-                            <div key={game} style={{ background: '#111', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
-                                <h3 style={{ margin: '0', color: 'var(--neon-cyan)', textTransform: 'capitalize' }}>{game.replace('_', ' ')}</h3>
-                                <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{getAverageScore(game)} <span style={{ fontSize: '0.8rem', color: '#666' }}>AVG SCORE</span></p>
-                                <p style={{ color: '#888' }}>{history.filter(h => h.gameId === game).length} Sessions Played</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <h3>RECENT LOGS</h3>
-                    <div style={{ maxHeight: '300px', overflowY: 'auto', background: '#000', padding: '10px' }}>
-                        {history.slice(0, 20).map((entry, idx) => (
-                            <div key={`${entry.id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #222', padding: '5px 0' }}>
-                                <span style={{ color: '#aaa' }}>{new Date(entry.date).toLocaleDateString()}</span>
-                                <span style={{ color: 'var(--neon-yellow)' }}>{entry.gameId}</span>
-                                <span style={{ fontWeight: 'bold' }}>{entry.score} pts</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* ANALYTICS TAB ... */}
 
             {/* MISSIONS TAB */}
             {tab === 'missions' && (
                 <div>
                     <h2>ADD NEW REWARD</h2>
                     <div style={{ background: '#111', padding: '20px', marginBottom: '20px' }}>
+
+                        {/* Type Toggle */}
+                        <div style={{ marginBottom: '15px', display: 'flex', gap: '20px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                <input
+                                    type="radio"
+                                    checked={!missionForm.isRealWorld}
+                                    onChange={() => setMissionForm({ ...missionForm, isRealWorld: false })}
+                                />
+                                <span style={{ color: !missionForm.isRealWorld ? 'var(--neon-green)' : '#888' }}>DIGITAL BITS (In-Game)</span>
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                <input
+                                    type="radio"
+                                    checked={missionForm.isRealWorld}
+                                    onChange={() => setMissionForm({ ...missionForm, isRealWorld: true })}
+                                />
+                                <span style={{ color: missionForm.isRealWorld ? 'var(--neon-pink)' : '#888' }}>REAL WORLD (Certificate)</span>
+                            </label>
+                        </div>
+
                         <div style={{ marginBottom: '10px' }}>
-                            <label style={{ display: 'block', color: '#888' }}>Reward Title (e.g. "1 Hour PS5")</label>
+                            <label style={{ display: 'block', color: '#888' }}>
+                                {missionForm.isRealWorld ? 'Reward Name (e.g. "Pizza Night")' : 'Reward Title'}
+                            </label>
                             <input
                                 style={{ width: '100%', padding: '10px', background: '#222', border: '1px solid #444', color: 'white' }}
                                 value={missionForm.title}

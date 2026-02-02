@@ -6,6 +6,7 @@ import NeonRunner from './games/NeonRunner/Game';
 import BlackMarket from './games/BlackMarket/Game';
 import EncryptionProtocol from './games/Encryption/Game';
 import TheHeist from './games/TheHeist/Game';
+import RewardsScreen from './components/parental/RewardsScreen';
 import { useGame } from './context/GameContext';
 
 // Placeholder for other pages
@@ -41,6 +42,7 @@ function App() {
                     <Route path="/game/market" element={<BlackMarket />} />
                     <Route path="/game/encrypt" element={<EncryptionProtocol />} />
                     <Route path="/game/heist" element={<TheHeist />} />
+                    <Route path="/rewards" element={<RewardsScreen />} />
                     <Route path="/shop" element={<Shop />} />
                     <Route path="/profile" element={<Profile />} />
                 </Routes>
@@ -58,7 +60,7 @@ function App() {
             }}>
                 <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>HOME</Link>
                 <Link to="/shop" style={{ color: 'white', textDecoration: 'none' }}>SHOP</Link>
-                <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>AGENT</Link>
+                <Link to="/rewards" style={{ color: 'var(--neon-pink)', textDecoration: 'none', fontWeight: 'bold' }}>AGENT</Link>
             </footer>
         </div>
     );

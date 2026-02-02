@@ -6,6 +6,7 @@ const CyberButton = ({
     variant = 'primary', // primary, danger, glitch
     disabled = false,
     soundType = 'heavy', // heavy, light
+    style = {},
     className = ''
 }) => {
 
@@ -44,11 +45,15 @@ const CyberButton = ({
         if (onClick) onClick(e);
     };
 
+    const isSecondary = variant === 'secondary';
+    const isGlitch = variant === 'glitch';
+    const isDanger = variant === 'danger';
+
     // Styles
     const baseStyle = {
         position: 'relative',
         padding: '12px 24px',
-        border: 'none',
+        border: isSecondary ? '1px solid var(--neon-cyan)' : 'none',
         outline: 'none',
         cursor: disabled ? 'not-allowed' : 'pointer',
         fontFamily: 'var(--font-mono)',
@@ -57,12 +62,20 @@ const CyberButton = ({
         letterSpacing: '1px',
         transition: 'all 0.1s ease',
         clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)',
-        background: variant === 'danger' ? 'var(--neon-pink)' : 'var(--neon-cyan)',
-        color: 'var(--bg-dark)',
+
+        background: isDanger ? 'var(--neon-pink)'
+            : isSecondary ? 'transparent'
+                : 'var(--neon-cyan)',
+
+        color: isSecondary ? 'var(--neon-cyan)' : 'var(--bg-dark)',
+
         opacity: disabled ? 0.5 : 1,
-        boxShadow: disabled ? 'none' : `4px 4px 0px rgba(0,0,0,0.5)`,
+        boxShadow: disabled ? 'none'
+            : isSecondary ? '0 0 10px rgba(0,255,255,0.2)'
+                : `4px 4px 0px rgba(0,0,0,0.5)`,
+
         fontSize: '1rem',
-        ...className
+        ...style // Correctly merge the passed style prop
     };
 
     return (

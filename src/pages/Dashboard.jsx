@@ -4,7 +4,8 @@ import GameGrid from '../components/launcher/GameGrid';
 import DailyLoginModal from '../components/ui/DailyLoginModal';
 import ParentGate from '../components/parental/ParentGate';
 import ParentDashboard from '../components/parental/ParentDashboard';
-import ChildMissions from '../components/parental/ChildMissions';
+import { useNavigate } from 'react-router-dom';
+import CyberButton from '../components/ui/CyberButton';
 import { useGame } from '../context/GameContext';
 
 const Dashboard = () => {
@@ -12,6 +13,7 @@ const Dashboard = () => {
     const [showDaily, setShowDaily] = useState(false);
     const [showParentAuth, setShowParentAuth] = useState(false);
     const [showParentDash, setShowParentDash] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (checkDailyReward()) {
@@ -56,7 +58,7 @@ const Dashboard = () => {
             </div>
 
             <StatsPanel />
-            <ChildMissions />
+            {/* Rewards moved to AGENT nav */}
 
             <h3 style={{
                 borderBottom: '1px solid var(--neon-blue)',

@@ -83,9 +83,26 @@ export const GameProvider = ({ children }) => {
     };
 
     // -- Mission Logic --
+    const generateClaimCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 4; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code; // e.g., "K9X2"
+    };
+
     const addMission = (mission) => {
-        // mission: { id, title, type: 'score_cumulative', target: 500, current: 0, reward: 'Pizza', icon: 'pizza', redeemed: false }
-        setMissions(prev => [...prev, { ...mission, id: Date.now(), current: 0, redeemed: false }]);
+        // mission: { title, target, gameId, reward, icon, type, isRealWorld }
+        const newMission = {
+            ...mission,
+            id: Date.now(),
+            current: 0,
+            redeemed: false,
+            claimCode: mission.isRealWorld ? generateClaimCode() : null,
+            unlockedAt: null
+        };
+        setMissions(prev => [...prev, newMission]);
     };
 
     const checkMissions = (type, amount, gameFilter = null) => {
@@ -93,7 +110,7 @@ export const GameProvider = ({ children }) => {
             if (m.redeemed) return m;
             if (m.type !== type) return m;
 
-            // Critical filter: If mission is tied to a specific game, ignore events from other games
+            // Critical filter
             if (m.gameId && m.gameId !== 'any' && m.gameId !== gameFilter) return m;
 
             const newCurrent = m.current + amount;
@@ -102,7 +119,17 @@ export const GameProvider = ({ children }) => {
     };
 
     const redeemMission = (id) => {
-        setMissions(prev => prev.map(m => m.id === id ? { ...m, redeemed: true } : m));
+        setMissions(prev => prev.map(m => {
+            if (m.id !== id) return m;
+
+            // If it's a real world reward, we just mark it as redeemed (unlocked in vault) for the child to see.
+            // The parent physically "redeems" it by seeing the code.
+            return {
+                ...m,
+                redeemed: true,
+                unlockedAt: new Date().toISOString()
+            };
+        }));
     };
 
     const value = {
