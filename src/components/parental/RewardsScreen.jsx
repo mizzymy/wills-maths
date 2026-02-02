@@ -1,241 +1,230 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
 import CyberButton from '../ui/CyberButton';
-import { useNavigate } from 'react-router-dom';
 import ParentGate from './ParentGate';
 import ParentDashboard from './ParentDashboard';
+import TradingCard from '../ui/TradingCard';
 
 const RewardsScreen = () => {
     const navigate = useNavigate();
-    const { missions, redeemMission } = useGame();
-    const [tab, setTab] = useState('directives'); // directives, vault
-    const [showParentAuth, setShowParentAuth] = useState(false);
-    const [showParentDash, setShowParentDash] = useState(false);
+    const {
+        rank, bits,
+        missions, redeemMission,
+        parentPin, setParentPin,
+        collectibles, CARDS // Import collectibles
+    } = useGame();
 
-    const activeMissions = missions.filter(m => !m.redeemed);
-    const unlockedRewards = missions.filter(m => m.redeemed && m.isRealWorld);
+    const [tab, setTab] = useState('vault'); // vault | archive
+    const [showParentGate, setShowParentGate] = useState(false);
+    const [isParentMode, setIsParentMode] = useState(false);
+
+    const onGateSuccess = () => {
+        setShowParentGate(false);
+        setIsParentMode(true);
+    };
+
+    const unlockedRewards = missions.filter(m => m.redeemed);
+    const pendingRewards = missions.filter(m => m.current >= m.target && !m.redeemed);
+    const activeMissions = missions.filter(m => m.current < m.target);
 
     return (
         <div style={{
-            height: '100vh',
-            background: 'radial-gradient(circle at center, #1a1a2e 0%, #000 100%)',
+            minHeight: '100vh',
+            background: '#050510',
             color: '#fff',
-            display: 'flex',
-            flexDirection: 'column',
             padding: '20px',
-            overflowY: 'auto'
+            fontFamily: "'Rajdhani', sans-serif"
         }}>
-            {/* Authenticated Admin View */}
-            {showParentDash && <ParentDashboard onClose={() => setShowParentDash(false)} />}
-
-            {/* Authentication Gate */}
-            {showParentAuth && (
-                <ParentGate
-                    onUnlock={() => {
-                        setShowParentAuth(false);
-                        setShowParentDash(true);
-                    }}
-                    onClose={() => setShowParentAuth(false)}
-                />
-            )}
-
             {/* Header */}
             <div style={{
-                display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center',
-                marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '15px'
+                display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px',
+                borderBottom: '1px solid #333', paddingBottom: '20px', gap: '15px' // Added gap and wrap
             }}>
-                <div>
-                    <h2 style={{ margin: 0, color: '#888', fontSize: '0.8rem', letterSpacing: '2px' }}>SYNDICATE REWARDS</h2>
-                    <h1 className="neon-text-yellow" style={{ margin: 0, fontSize: '2rem' }}>THE VAULT</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <h1 className="neon-text-pink" style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '3px', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
+                        REWARDS
+                    </h1>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                        onClick={() => setShowParentAuth(true)}
-                        style={{
-                            background: 'transparent',
-                            border: '1px solid #333',
-                            color: '#666',
-                            padding: '8px',
-                            fontSize: '0.75rem',
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            display: 'flex', alignItems: 'center', gap: '5px'
-                        }}
-                    >
-                        ⚙️ HANDLER
-                    </button>
-                    <CyberButton
-                        variant="glitch"
-                        style={{ padding: '8px 16px', fontSize: '0.75rem', maxWidth: '120px' }}
-                        onClick={() => navigate('/')}
-                    >
-                        &lt; RETURN
+                    {!isParentMode && (
+                        <CyberButton variant="secondary" onClick={() => setShowParentGate(true)}>
+                            ⚙️ HANDLE
+                        </CyberButton>
+                    )}
+                    <CyberButton variant="secondary" onClick={() => navigate('/dashboard')}>
+                        RETURN
                     </CyberButton>
                 </div>
             </div>
 
+            {/* Parent Mode Overlay */}
+            {isParentMode && (
+                <ParentDashboard onClose={() => setIsParentMode(false)} />
+            )}
+
+            {/* Parent Gate Modal */}
+            {showParentGate && (
+                <ParentGate
+                    onSuccess={onGateSuccess}
+                    onClose={() => setShowParentGate(false)}
+                />
+            )}
+
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '30px' }}>
                 <CyberButton
-                    variant={tab === 'directives' ? 'primary' : 'secondary'}
-                    style={{ flex: 1, padding: '10px 5px', fontSize: '0.8rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
-                    onClick={() => setTab('directives')}
-                >
-                    DIRECTIVES {activeMissions.length > 0 && `(${activeMissions.length})`}
-                </CyberButton>
-                <CyberButton
-                    variant={tab === 'vault' ? 'primary' : 'secondary'}
-                    style={{ flex: 1, padding: '10px 5px', fontSize: '0.8rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
                     onClick={() => setTab('vault')}
+                    variant={tab === 'vault' ? 'primary' : 'secondary'}
+                    style={{
+                        flex: '1 1 auto',
+                        justifyContent: 'center',
+                        fontSize: 'clamp(0.8rem, 3vw, 1.2rem)',
+                        borderColor: tab === 'vault' ? 'var(--neon-pink)' : '#333',
+                        color: tab === 'vault' ? '#000' : '#888', // Black text on active
+                        backgroundColor: tab === 'vault' ? 'var(--neon-pink)' : 'transparent', // Force background
+                        boxShadow: tab === 'vault' ? '0 0 15px var(--neon-pink)' : 'none'
+                    }}
                 >
-                    VAULT {unlockedRewards.length > 0 && `(${unlockedRewards.length})`}
+                    THE VAULT
+                </CyberButton>
+
+                <CyberButton
+                    onClick={() => setTab('archive')}
+                    variant={tab === 'archive' ? 'primary' : 'secondary'}
+                    style={{
+                        flex: '1 1 auto',
+                        justifyContent: 'center',
+                        fontSize: 'clamp(0.8rem, 3vw, 1.2rem)',
+                        borderColor: tab === 'archive' ? 'var(--neon-cyan)' : '#333',
+                        color: tab === 'archive' ? '#000' : '#888', // Black text on active
+                        backgroundColor: tab === 'archive' ? 'var(--neon-cyan)' : 'transparent', // Force background
+                        boxShadow: tab === 'archive' ? '0 0 15px var(--neon-cyan)' : 'none'
+                    }}
+                >
+                    SYNDICATE ARCHIVES
                 </CyberButton>
             </div>
 
-            {/* DIRECTIVES TAB */}
-            {tab === 'directives' && (
-                <div style={{ display: 'grid', gap: '15px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-                    {activeMissions.length === 0 && (
-                        <div style={{
-                            gridColumn: '1 / -1', textAlign: 'center', padding: '50px',
-                            border: '1px dashed #333', borderRadius: '10px', color: '#666'
-                        }}>
-                            <h3>NO ACTIVE DIRECTIVES</h3>
-                            <p>Request new orders from your Handler (Parents, Teacher, or Guardian).</p>
+            {tab === 'vault' && (
+                <>
+                    {/* Active Missions */}
+                    <div style={{ marginBottom: '40px' }}>
+                        <h3 style={{ color: 'var(--neon-blue)', marginBottom: '20px' }}>ACTIVE DIRECTIVES</h3>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                            {activeMissions.length === 0 && (
+                                <div style={{
+                                    gridColumn: '1 / -1', textAlign: 'center', padding: '50px',
+                                    border: '1px dashed #333', borderRadius: '10px', color: '#666'
+                                }}>
+                                    <h3>NO ACTIVE DIRECTIVES</h3>
+                                    <p>Request new orders from your Handler (Parents, Teacher, or Guardian).</p>
+                                </div>
+                            )}
+                            {activeMissions.map(m => {
+                                const progress = Math.min(100, (m.current / m.target) * 100);
+                                const isComplete = m.current >= m.target;
+
+                                return (
+                                    <div key={m.id} style={{
+                                        background: '#111', padding: '20px', borderRadius: '10px',
+                                        border: '1px solid #333', position: 'relative', overflow: 'hidden'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                            <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{m.title}</span>
+                                            <span style={{ color: 'var(--neon-pink)' }}>{m.current} / {m.target}</span>
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        <div style={{ height: '10px', background: '#333', borderRadius: '5px', overflow: 'hidden' }}>
+                                            <div style={{
+                                                height: '100%', width: `${progress}%`,
+                                                background: isComplete ? 'var(--neon-green)' : 'var(--neon-pink)',
+                                                transition: 'width 0.5s ease'
+                                            }} />
+                                        </div>
+
+                                        <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#888' }}>
+                                            Reward: {m.isRealWorld ? <span style={{ color: 'var(--neon-pink)' }}>REAL WORLD ITEM</span> : `${m.reward} BITS`}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Pending Claims */}
+                    {pendingRewards.length > 0 && (
+                        <div style={{ marginBottom: '40px' }}>
+                            <h3 className="neon-text-green" style={{ marginBottom: '20px' }}>MISSION ACCOMPLISHED</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                                {pendingRewards.map(m => (
+                                    <div key={m.id} className="glitch-box" style={{ padding: '20px', textAlign: 'center' }}>
+                                        <h3 style={{ margin: 0, color: 'var(--neon-green)' }}>{m.title} COMPLETE</h3>
+                                        <p>CODE: <span style={{ fontSize: '1.5rem', fontWeight: 'bold', letterSpacing: '5px', color: '#fff' }}>{m.claimCode || 'AUTO'}</span></p>
+                                        <p style={{ fontSize: '0.8rem', color: '#aaa' }}>Show this code to your Handler to unlock the vault.</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
-                    {activeMissions.map(m => {
-                        const progress = Math.min(100, (m.current / m.target) * 100);
-                        const isComplete = m.current >= m.target;
 
-                        return (
-                            <div key={m.id} style={{
-                                background: 'linear-gradient(180deg, #111 0%, #050510 100%)',
-                                border: isComplete ? '1px solid var(--neon-green)' : '1px solid #333',
-                                borderRadius: '12px',
-                                padding: '20px',
-                                position: 'relative',
-                                boxShadow: isComplete ? '0 0 15px rgba(0,255,100,0.1)' : 'none',
-                                transition: 'all 0.3s ease'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                    <div>
-                                        <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '5px' }}>
-                                            {m.gameId === 'any' ? 'GLOBAL OBJECTIVE' : m.gameId.replace('_', ' ').toUpperCase()}
-                                        </div>
-                                        <h3 style={{ margin: 0, color: m.isRealWorld ? 'var(--neon-pink)' : 'var(--neon-cyan)', fontSize: '1.2rem' }}>
-                                            {m.title}
-                                        </h3>
-                                    </div>
-                                    {m.isRealWorld && (
-                                        <div style={{
-                                            background: 'var(--neon-pink)', color: '#000',
-                                            borderRadius: '50%', width: '30px', height: '30px',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
-                                        }}>
-                                            R
-                                        </div>
-                                    )}
+                    {/* The Vault (Unlocked) */}
+                    <div>
+                        <h3 style={{ color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span>🔓</span> SECURE VAULT STORAGE
+                        </h3>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+                            {unlockedRewards.length === 0 && (
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', marginTop: '50px', color: '#444' }}>
+                                    <h2>VAULT EMPTY</h2>
+                                    <p>Complete missions to earn real world rewards and in-game challenges from your teacher or guardian.</p>
                                 </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#aaa', marginBottom: '5px' }}>
-                                    <span>PROGRESS</span>
-                                    <span style={{ color: isComplete ? 'var(--neon-green)' : '#fff' }}>{m.current} / {m.target}</span>
+                            )}
+                            {unlockedRewards.map(m => (
+                                <div key={m.id} style={{
+                                    background: '#1a1a1a', padding: '20px', borderRadius: '10px',
+                                    border: '1px solid var(--neon-green)', textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🎁</div>
+                                    <div style={{ fontWeight: 'bold' }}>{m.title}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#aaa' }}>Unlocked: {new Date(m.unlockedAt).toLocaleDateString()}</div>
                                 </div>
-
-                                <div style={{ height: '6px', background: '#222', borderRadius: '3px', marginBottom: '20px', overflow: 'hidden' }}>
-                                    <div style={{
-                                        width: `${progress}%`,
-                                        height: '100%',
-                                        background: isComplete ? 'var(--neon-green)' : (m.isRealWorld ? 'var(--neon-pink)' : 'var(--neon-cyan)'),
-                                        boxShadow: `0 0 10px ${isComplete ? 'var(--neon-green)' : 'var(--neon-cyan)'}`
-                                    }} />
-                                </div>
-
-                                {isComplete ? (
-                                    <CyberButton
-                                        variant="primary"
-                                        style={{ width: '100%' }}
-                                        onClick={() => redeemMission(m.id)}
-                                    >
-                                        {m.isRealWorld ? 'Generate Certificate' : 'Claim Reward'}
-                                    </CyberButton>
-                                ) : (
-                                    <div style={{
-                                        textAlign: 'center', color: '#444', fontSize: '0.8rem',
-                                        padding: '10px', border: '1px solid #222', borderRadius: '4px'
-                                    }}>
-                                        AWAITING COMPLETION
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                            ))}
+                        </div>
+                    </div>
+                </>
             )}
 
-            {/* VAULT TAB (Certificates) */}
-            {tab === 'vault' && (
-                <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-                    {unlockedRewards.length === 0 && (
-                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', marginTop: '50px', color: '#444' }}>
-                            <h2>VAULT EMPTY</h2>
-                            <p>Complete missions to earn real world rewards and in-game challenges from your teacher or guardian.</p>
-                        </div>
-                    )}
-                    {unlockedRewards.map(m => (
-                        <div key={m.id} style={{
-                            background: '#000',
-                            border: '1px solid var(--neon-gold)',
-                            borderRadius: '15px',
-                            padding: '5px', // Frame padding
-                            position: 'relative',
-                            boxShadow: '0 0 30px rgba(255, 215, 0, 0.1)',
-                        }}>
-                            {/* Inner Card */}
-                            <div style={{
-                                background: 'linear-gradient(135deg, #222 0%, #111 100%)',
-                                borderRadius: '10px',
-                                padding: '25px',
-                                textAlign: 'center',
-                                height: '100%',
-                                display: 'flex', flexDirection: 'column', justifyContent: 'center'
-                            }}>
-                                <div style={{
-                                    borderBottom: '1px solid #444', paddingBottom: '10px',
-                                    marginBottom: '20px', letterSpacing: '2px', color: 'var(--neon-gold)', fontSize: '0.8rem'
-                                }}>
-                                    OFFICIAL SYNDICATE REWARD
-                                </div>
+            {/* SYNDICATE ARCHIVES TAB */}
+            {tab === 'archive' && (
+                <div>
+                    <div style={{
+                        background: 'rgba(0, 255, 255, 0.05)',
+                        border: '1px solid var(--neon-cyan)',
+                        padding: '20px', borderRadius: '10px', marginBottom: '30px'
+                    }}>
+                        <h3 style={{ margin: '0 0 10px 0', color: 'var(--neon-cyan)' }}>PERSONNEL DATABASE</h3>
+                        <p style={{ margin: 0, color: '#aaa' }}>
+                            Collect character cards by completing secret milestones across the network.
+                            <br />
+                            <span style={{ fontSize: '0.9rem', color: '#666' }}>Current Collection: {collectibles ? collectibles.length : 0} / {CARDS ? CARDS.length : 0}</span>
+                        </p>
+                    </div>
 
-                                <h1 style={{
-                                    fontSize: '2rem', margin: '0 0 20px 0', color: '#fff',
-                                    textShadow: '0 0 10px rgba(255,255,255,0.3)',
-                                    lineHeight: 1.2
-                                }}>
-                                    {m.reward}
-                                </h1>
-
-                                <div style={{
-                                    background: '#111', padding: '15px', borderRadius: '8px',
-                                    border: '1px dashed #555', display: 'inline-block', margin: '0 auto'
-                                }}>
-                                    <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '5px' }}>AUTHENTICATION CODE</div>
-                                    <div style={{
-                                        fontSize: '2.2rem', fontFamily: 'monospace', letterSpacing: '4px',
-                                        color: 'var(--neon-green)', fontWeight: 'bold'
-                                    }}>
-                                        {m.claimCode}
-                                    </div>
-                                </div>
-
-                                <p style={{ marginTop: '25px', fontSize: '0.7rem', color: '#444' }}>
-                                    ISSUED: {new Date(m.unlockedAt).toLocaleDateString()}
-                                </p>
-                            </div>
-                        </div>
-                    ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '25px' }}>
+                        {CARDS && CARDS.map(card => (
+                            <TradingCard
+                                key={card.id}
+                                card={card}
+                                unlocked={collectibles && collectibles.includes(card.id)}
+                                onClick={() => { }} // Could open modal details
+                            />
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
