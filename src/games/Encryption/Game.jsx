@@ -15,42 +15,58 @@ const EncryptionProtocol = () => {
     const [input, setInput] = useState('');
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(90);
-    const [gameState, setGameState] = useState('menu'); // menu, playing, gameover
+    const [gameState, setGameState] = useState('menu'); // menu, mode_select, playing, gameover
     const [feedback, setFeedback] = useState(''); // 'ACCESS GRANTED' / 'DENIED'
+
+    // New State for Modes
+    const [gameMode, setGameMode] = useState('time'); // 'time', '10', '20'
+    const [progress, setProgress] = useState(0);
 
     // Audio Ref
     const typeSfx = useRef(new Audio('/assets/audio/sfx/ui/sfx_ui_hover_master.mp3'));
     // We can reuse the UI hover as a "key tap" or generate a specific one later.
 
-    const startGame = (selectedDiff) => {
+    const selectDifficulty = (selectedDiff) => {
         setDifficulty(selectedDiff);
+        setGameState('mode_select');
+    };
+
+    const startSession = (mode) => {
+        setGameMode(mode);
+        setScore(0);
+        setProgress(0);
 
         // Timer Scaling
-        // 1: 120s, 2: 90s, 3: 75s, 4: 60s
-        const time = selectedDiff === 1 ? 120
-            : selectedDiff === 2 ? 90
-                : selectedDiff === 3 ? 75
-                    : 60;
+        if (mode === 'time') {
+            const time = difficulty === 1 ? 120
+                : difficulty === 2 ? 90
+                    : difficulty === 3 ? 75
+                        : 60;
+            setTimeLeft(time);
+        } else {
+            setTimeLeft(0);
+        }
 
-        setTimeLeft(time);
-        startNewRound(selectedDiff);
+        startNewRound(difficulty);
         setGameState('playing');
     };
 
     useEffect(() => {
         if (gameState !== 'playing') return;
 
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    setGameState('gameover');
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [gameState]);
+        if (gameMode === 'time') {
+            const timer = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev <= 1) {
+                        setGameState('gameover');
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [gameState, gameMode]);
 
     const startNewRound = (diff = difficulty) => {
         // Generate new puzzle
@@ -80,7 +96,22 @@ const EncryptionProtocol = () => {
             setScore(prev => prev + 100);
             setFeedback('ACCESS GRANTED');
             addBits(5);
-            logGameSession('encryption_protocol', 100, { type: 'hack_success', difficulty });
+
+            // Handle Progress for Fixed Modes
+            if (gameMode !== 'time') {
+                const newProgress = progress + 1;
+                setProgress(newProgress);
+                const targetCount = parseInt(gameMode);
+
+                if (newProgress >= targetCount) {
+                    setTimeout(() => setGameState('gameover'), 1000);
+                    // Early log? No, on exit is safer but let's stick to effect
+                    return;
+                }
+            }
+
+            // Keep partial log or remove? Let's check logic. 
+            // Actually, usually we log session end. Let's rely on gameover effect for full session log.
 
             setTimeout(() => {
                 startNewRound();
@@ -89,9 +120,18 @@ const EncryptionProtocol = () => {
             // Wrong
             setFeedback('ACCESS DENIED');
             setInput('');
-            setTimeLeft(prev => Math.max(0, prev - 5)); // Penalty
+            if (gameMode === 'time') {
+                setTimeLeft(prev => Math.max(0, prev - 5)); // Penalty only in time mode
+            }
         }
     };
+
+    useEffect(() => {
+        if (gameState === 'gameover') {
+            // For now simply using total score.
+            logGameSession('encryption_protocol', score, { difficulty, mode: gameMode });
+        }
+    }, [gameState]);
 
     return (
         <div style={{
@@ -107,10 +147,70 @@ const EncryptionProtocol = () => {
             {/* Terminal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
                 <div>sys::root_access</div>
-                <div>T-{timeLeft}s</div>
+                <div>{gameMode === 'time' ? `T-${timeLeft}s` : `SEQ: ${progress}/${gameMode}`}</div>
             </div>
 
-            {gameState === 'menu' && <DifficultySelector onSelect={startGame} />}
+            {gameState === 'menu' && <DifficultySelector onSelect={selectDifficulty} />}
+
+            {gameState === 'mode_select' && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+                    <h2 style={{ color: '#0ff', textShadow: '0 0 10px #0ff' }}>SELECT DECRYPTION MODE</h2>
+
+                    <button
+                        onClick={() => startSession('time')}
+                        style={{
+                            background: '#000',
+                            border: '1px solid #0ff',
+                            boxShadow: '0 0 10px #0ff',
+                            width: '300px', padding: '20px',
+                            color: '#0ff',
+                            fontFamily: 'inherit',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)'
+                        }}
+                    >
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '5px' }}>⏱️ TIME ATTACK</div>
+                        <div style={{ fontSize: '0.9rem', color: '#fff' }}>Decrypt before lockout!</div>
+                    </button>
+
+                    <button
+                        onClick={() => startSession('10')}
+                        style={{
+                            background: '#000',
+                            border: '1px solid #0f0',
+                            boxShadow: '0 0 10px #0f0',
+                            width: '300px', padding: '20px',
+                            color: '#0f0',
+                            fontFamily: 'inherit',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)'
+                        }}
+                    >
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '5px' }}>🔓 10 LINES</div>
+                        <div style={{ fontSize: '0.9rem', color: '#fff' }}>Standard Decryption. 10 Codes.</div>
+                    </button>
+
+                    <button
+                        onClick={() => startSession('20')}
+                        style={{
+                            background: '#000',
+                            border: '1px solid #d0f',
+                            boxShadow: '0 0 10px #d0f',
+                            width: '300px', padding: '20px',
+                            color: '#d0f',
+                            fontFamily: 'inherit',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)'
+                        }}
+                    >
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '5px' }}>🛡️ 20 LINES</div>
+                        <div style={{ fontSize: '0.9rem', color: '#fff' }}>Deep Dive. 20 Codes.</div>
+                    </button>
+                </div>
+            )}
 
             {gameState === 'playing' ? (
                 puzzle ? (
@@ -155,13 +255,18 @@ const EncryptionProtocol = () => {
                 ) : (
                     <div style={{ textAlign: 'center', marginTop: '30vh', color: '#0f0' }}>INITIALIZING...</div>
                 )
-            ) : (
+            ) : gameState === 'gameover' ? (
                 <div style={{ textAlign: 'center', marginTop: '30vh' }}>
-                    <h1 style={{ color: 'red' }}>SYSTEM LOCKOUT</h1>
+                    <h1 style={{ color: gameMode === 'time' ? 'red' : '#0f0' }}>
+                        {gameMode === 'time' ? 'SYSTEM LOCKOUT' : 'DECRYPTION COMPLETE'}
+                    </h1>
                     <p>DATA SECURED: {score} BYTES</p>
-                    <CyberButton variant="glitch" onClick={() => navigate('/')}>EXIT</CyberButton>
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px' }}>
+                        <CyberButton variant="primary" onClick={() => setGameState('menu')}>NEW DECRYPTION</CyberButton>
+                        <CyberButton variant="glitch" onClick={() => navigate('/')}>EXIT</CyberButton>
+                    </div>
                 </div>
-            )}
+            ) : null}
 
             {/* Scanlines Overlay (CSS) */}
             <div style={{

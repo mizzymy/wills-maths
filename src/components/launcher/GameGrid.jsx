@@ -22,9 +22,9 @@ const GAMES = [
     },
     {
         id: 'market',
-        title: 'BLACK MARKET',
-        subtitle: 'Trade & Profit',
-        desc: 'Buy low. Sell high.',
+        title: 'E-SHOP',
+        subtitle: 'Cyber Merchant',
+        desc: 'Serve customers. Calculate change.',
         path: '/game/market',
         locked: false,
         color: 'var(--neon-yellow)'

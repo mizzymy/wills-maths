@@ -6,6 +6,8 @@ import HexGrid from './components/HexGrid';
 import CyberButton from '../../components/ui/CyberButton';
 import DifficultySelector from '../../components/ui/DifficultySelector';
 
+// ... imports remain the same
+
 const TheBreach = () => {
     const navigate = useNavigate();
     const { addBits, logGameSession } = useGame();
@@ -17,7 +19,11 @@ const TheBreach = () => {
     const [selectedNodes, setSelectedNodes] = useState([]);
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(60);
-    const [gameState, setGameState] = useState('menu'); // menu, playing, gameover
+    const [gameState, setGameState] = useState('menu'); // menu, mode_select, playing, gameover
+
+    // New State for Modes
+    const [gameMode, setGameMode] = useState('time'); // 'time', '10', '20'
+    const [progress, setProgress] = useState(0);
 
     // Audio Refs (Quick implementation)
     const bgmRef = useRef(new Audio('/assets/audio/bgm/bgm_breach_flow.mp3'));
@@ -33,29 +39,41 @@ const TheBreach = () => {
     // Timer
     useEffect(() => {
         if (gameState !== 'playing') return;
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    endGame();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [gameState]);
 
-    const startGame = (selectedDiff) => {
+        if (gameMode === 'time') {
+            const timer = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev <= 1) {
+                        endGame();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [gameState, gameMode]);
+
+    const selectDifficulty = (selectedDiff) => {
         setDifficulty(selectedDiff);
+        setGameState('mode_select');
+    };
 
-        // Timer Scaling (Increased by 15%)
-        // 1: 104s, 2: 69s, 3: 52s, 4: 35s
-        const time = selectedDiff === 1 ? 104
-            : selectedDiff === 2 ? 69
-                : selectedDiff === 3 ? 52
-                    : 35;
+    const startSession = (mode) => {
+        setGameMode(mode);
+        setScore(0);
+        setProgress(0);
 
-        setTimeLeft(time);
+        // Timer Scaling for Time Attack
+        if (mode === 'time') {
+            const time = difficulty === 1 ? 104
+                : difficulty === 2 ? 69
+                    : difficulty === 3 ? 52
+                        : 35;
+            setTimeLeft(time);
+        } else {
+            setTimeLeft(0);
+        }
 
         // Start Audio
         bgmRef.current.loop = true;
@@ -65,19 +83,7 @@ const TheBreach = () => {
         setGameState('playing');
 
         // Generate Board
-        const levelData = generateLevel(selectedDiff);
-        setTarget(levelData.target);
-        setNodes(levelData.nodes);
-        setSelectedNodes([]);
-    };
-
-    const startNewRound = () => {
-        // Regenerate nodes if low, or just keep same target
-        // For MVP, we regenerate the whole board if empty, or just fill gaps?
-        // Let's keep it simple: One "Round" is one board for now, or endless refill.
-        // Endless refill is better for "Flow".
-
-        const levelData = generateLevel(difficulty || 1);
+        const levelData = generateLevel(difficulty);
         setTarget(levelData.target);
         setNodes(levelData.nodes);
         setSelectedNodes([]);
@@ -114,6 +120,18 @@ const TheBreach = () => {
             setScore(prev => prev + (newSelection.length * 10)); // Simple scoring
             addBits(1); // Give currency
 
+            // Handle Progress for Fixed Modes
+            if (gameMode !== 'time') {
+                const newProgress = progress + 1;
+                setProgress(newProgress);
+                const targetCount = parseInt(gameMode);
+
+                if (newProgress >= targetCount) {
+                    setTimeout(endGame, 500);
+                    return;
+                }
+            }
+
             // Remove nodes
             const solvedIds = newSelection.map(n => n.id);
             const remainingNodes = nodes.filter(n => !solvedIds.includes(n.id));
@@ -123,13 +141,12 @@ const TheBreach = () => {
 
             // If board empty or low, refill
             if (remainingNodes.length < 6) {
-                // Add new batch (simple merge) - KEEP SAME TARGET
+                // Add new batch elements
                 const nextLevel = generateLevel(difficulty, target);
                 setNodes([...remainingNodes, ...nextLevel.nodes]);
             }
         } else if (result.reason === 'overflow') {
             // Wrong combo
-            // Maybe play error sound?
             setSelectedNodes([]); // Reset
         }
     };
@@ -140,7 +157,7 @@ const TheBreach = () => {
 
     useEffect(() => {
         if (gameState === 'gameover') {
-            logGameSession('the_breach', score, { difficulty });
+            logGameSession('the_breach', score, { difficulty, mode: gameMode });
         }
     }, [gameState]);
 
@@ -152,15 +169,79 @@ const TheBreach = () => {
                 <CyberButton variant="glitch" onClick={() => navigate('/')} style={{ fontSize: '0.8rem' }}>
                     ABORT
                 </CyberButton>
-                <div className="neon-text-pink" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                    {timeLeft}s
-                </div>
+
+                {gameState === 'playing' && (
+                    <div className="neon-text-pink" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                        {gameMode === 'time' ? `${timeLeft}s` : `${progress} / ${gameMode}`}
+                    </div>
+                )}
+
                 <div className="neon-text-cyan" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
                     SCORE: {score}
                 </div>
             </div>
 
-            {gameState === 'menu' && <DifficultySelector onSelect={startGame} />}
+            {gameState === 'menu' && <DifficultySelector onSelect={selectDifficulty} />}
+
+            {gameState === 'mode_select' && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+                    <h2 className="neon-text-cyan">SELECT MISSION TYPE</h2>
+
+                    <button
+                        onClick={() => startSession('time')}
+                        style={{
+                            background: '#000',
+                            border: '1px solid var(--neon-cyan)',
+                            boxShadow: '0 0 10px var(--neon-cyan)',
+                            width: '300px', padding: '20px',
+                            color: 'var(--neon-cyan)',
+                            fontFamily: 'var(--font-mono)',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)'
+                        }}
+                    >
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '5px' }}>⏱️ TIME ATTACK</div>
+                        <div style={{ fontSize: '0.9rem', color: '#fff' }}>Clear breaches before critical failure!</div>
+                    </button>
+
+                    <button
+                        onClick={() => startSession('10')}
+                        style={{
+                            background: '#000',
+                            border: '1px solid var(--neon-green)',
+                            boxShadow: '0 0 10px var(--neon-green)',
+                            width: '300px', padding: '20px',
+                            color: 'var(--neon-green)',
+                            fontFamily: 'var(--font-mono)',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)'
+                        }}
+                    >
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '5px' }}>🛡️ 10 BREACHES</div>
+                        <div style={{ fontSize: '0.9rem', color: '#fff' }}>Seal 10 leaks. Take your time.</div>
+                    </button>
+
+                    <button
+                        onClick={() => startSession('20')}
+                        style={{
+                            background: '#000',
+                            border: '1px solid var(--neon-purple)',
+                            boxShadow: '0 0 10px var(--neon-purple)',
+                            width: '300px', padding: '20px',
+                            color: 'var(--neon-purple)',
+                            fontFamily: 'var(--font-mono)',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)'
+                        }}
+                    >
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '5px' }}>🛡️ 20 BREACHES</div>
+                        <div style={{ fontSize: '0.9rem', color: '#fff' }}>Extended Operation. Seal 20 leaks.</div>
+                    </button>
+                </div>
+            )}
 
             {gameState === 'playing' ? (
                 <>
@@ -192,16 +273,17 @@ const TheBreach = () => {
                         />
                     </div>
                 </>
-            ) : (
+            ) : gameState === 'gameover' ? (
                 /* Game Over Screen */
                 <div style={{ marginTop: '20vh' }}>
                     <h1 className="neon-text-pink">MISSION COMPLETE</h1>
                     <p>FINAL SCORE: {score}</p>
-                    <CyberButton variant="primary" onClick={() => window.location.reload()}>RETRY</CyberButton>
-                    <br /><br />
-                    <CyberButton variant="glitch" onClick={() => navigate('/')}>RETURN TO BASE</CyberButton>
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                        <CyberButton variant="primary" onClick={() => setGameState('menu')}>NEW MISSION</CyberButton>
+                        <CyberButton variant="glitch" onClick={() => navigate('/')}>RETURN TO BASE</CyberButton>
+                    </div>
                 </div>
-            )}
+            ) : null}
         </div>
     );
 };
