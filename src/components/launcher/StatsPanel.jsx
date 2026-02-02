@@ -53,7 +53,12 @@ const StatsPanel = () => {
                 }}>
                     {/* Fallback if image missing */}
                     <img
-                        src="/assets/images/ranks/rank_03_operative.png"
+                        src={`/assets/images/ranks/rank_0${rank === 'Rookie' ? 1 :
+                            rank === 'Agent' ? 2 :
+                                rank === 'Operative' ? 3 :
+                                    rank === 'Elite' ? 4 :
+                                        rank === 'Master' ? 5 : 1
+                            }_${rank.toLowerCase()}.png`}
                         alt="Rank"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
