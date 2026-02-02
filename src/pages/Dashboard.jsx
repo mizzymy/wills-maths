@@ -40,22 +40,28 @@ const Dashboard = () => {
             )}
 
             {/* Header / ID Card Section */}
-            <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-                <h2 className="neon-text-cyan" style={{
-                    fontSize: '1rem',
-                    letterSpacing: '2px',
-                    marginBottom: '0.2rem'
-                }}>
-                    SYNDICATE OS v1.0
-                </h2>
-                <h1 style={{
-                    fontSize: '2rem',
-                    margin: 0,
-                    textShadow: '0 0 10px rgba(255,255,255,0.5)'
-                }}>
-                    WELCOME AGENT
-                </h1>
+            <div style={{ marginBottom: '1rem', textAlign: 'center', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                    onClick={() => setShowParentAuth(true)}
+                    style={{
+                        background: 'transparent',
+                        border: '1px solid var(--neon-blue)',
+                        color: 'var(--neon-blue)',
+                        padding: '8px 12px',
+                        fontSize: '0.7rem',
+                        cursor: 'pointer',
+                        fontFamily: 'var(--font-mono)',
+                        letterSpacing: '1px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                    }}
+                >
+                    <span style={{ fontSize: '1rem' }}>⚙️</span> [ HANDLER ACCESS ]
+                </button>
             </div>
+
+
 
             <StatsPanel />
             {/* Rewards moved to AGENT nav */}
@@ -75,20 +81,6 @@ const Dashboard = () => {
             </h3>
 
             <GameGrid />
-
-            {/* Parent Access Trigger */}
-            <div style={{ textAlign: 'center', marginTop: '40px', opacity: 0.6 }}>
-                <button
-                    onClick={() => setShowParentAuth(true)}
-                    style={{
-                        background: 'transparent', border: '1px solid #333',
-                        color: '#444', padding: '5px 10px', fontSize: '0.7rem',
-                        cursor: 'pointer'
-                    }}
-                >
-                    [ HANDLER ACCESS ]
-                </button>
-            </div>
         </div>
     );
 };

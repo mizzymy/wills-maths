@@ -41,11 +41,73 @@ const ParentDashboard = ({ onClose }) => {
             overflowY: 'auto',
             color: '#eee'
         }}>
-            {/* Header ... */}
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 className="neon-text-pink" style={{ margin: 0, letterSpacing: '2px' }}>PARENT DASHBOARD</h2>
+                <CyberButton variant="glitch" onClick={onClose} style={{ fontSize: '0.8rem', padding: '5px 15px' }}>
+                    CLOSE ACCESS
+                </CyberButton>
+            </div>
 
-            {/* Tabs ... */}
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
+                <CyberButton
+                    variant={tab === 'analytics' ? 'primary' : 'secondary'}
+                    onClick={() => setTab('analytics')}
+                    style={{ flex: 1 }}
+                >
+                    ANALYTICS
+                </CyberButton>
+                <CyberButton
+                    variant={tab === 'missions' ? 'primary' : 'secondary'}
+                    onClick={() => setTab('missions')}
+                    style={{ flex: 1 }}
+                >
+                    MISSIONS
+                </CyberButton>
+                <CyberButton
+                    variant={tab === 'settings' ? 'primary' : 'secondary'}
+                    onClick={() => setTab('settings')}
+                    style={{ flex: 1 }}
+                >
+                    SETTINGS
+                </CyberButton>
+            </div>
 
-            {/* ANALYTICS TAB ... */}
+            {/* ANALYTICS TAB */}
+            {tab === 'analytics' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                    {[
+                        { id: 'neon_runner', name: 'Neon Runner' },
+                        { id: 'the_breach', name: 'The Breach' },
+                        { id: 'encryption_protocol', name: 'Encryption' },
+                        { id: 'black_market', name: 'Black Market' }
+                    ].map(game => (
+                        <div key={game.id} style={{
+                            background: '#111', padding: '20px', borderRadius: '10px',
+                            border: '1px solid #333'
+                        }}>
+                            <h3 style={{ margin: '0 0 10px 0', color: 'var(--neon-cyan)' }}>{game.name}</h3>
+                            <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                                {getAverageScore(game.id)} <span style={{ fontSize: '1rem', color: '#666' }}>avg pts</span>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '5px' }}>
+                                Sessions: {history.filter(h => h.gameId === game.id).length}
+                            </div>
+                        </div>
+                    ))}
+
+                    <div style={{
+                        background: '#111', padding: '20px', borderRadius: '10px',
+                        border: '1px solid var(--neon-pink)', gridColumn: '1 / -1'
+                    }}>
+                        <h3 style={{ margin: '0 0 10px 0', color: 'var(--neon-pink)' }}>TOTAL REWARDS UNLOCKED</h3>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                            {missions.filter(m => m.redeemed).length} / {missions.length}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* MISSIONS TAB */}
             {tab === 'missions' && (
@@ -54,23 +116,28 @@ const ParentDashboard = ({ onClose }) => {
                     <div style={{ background: '#111', padding: '20px', marginBottom: '20px' }}>
 
                         {/* Type Toggle */}
-                        <div style={{ marginBottom: '15px', display: 'flex', gap: '20px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                <input
-                                    type="radio"
-                                    checked={!missionForm.isRealWorld}
-                                    onChange={() => setMissionForm({ ...missionForm, isRealWorld: false })}
-                                />
-                                <span style={{ color: !missionForm.isRealWorld ? 'var(--neon-green)' : '#888' }}>DIGITAL BITS (In-Game)</span>
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                <input
-                                    type="radio"
-                                    checked={missionForm.isRealWorld}
-                                    onChange={() => setMissionForm({ ...missionForm, isRealWorld: true })}
-                                />
-                                <span style={{ color: missionForm.isRealWorld ? 'var(--neon-pink)' : '#888' }}>REAL WORLD (Certificate)</span>
-                            </label>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                            <CyberButton
+                                variant={!missionForm.isRealWorld ? 'primary' : 'secondary'}
+                                onClick={() => setMissionForm({ ...missionForm, isRealWorld: false })}
+                                style={{ flex: 1, padding: '15px', fontSize: '0.9rem', justifyContent: 'center' }}
+                            >
+                                DIGITAL BITS
+                            </CyberButton>
+                            <CyberButton
+                                variant={missionForm.isRealWorld ? 'primary' : 'secondary'}
+                                onClick={() => setMissionForm({ ...missionForm, isRealWorld: true })}
+                                style={{
+                                    flex: 1, padding: '15px', fontSize: '0.9rem', justifyContent: 'center',
+                                    ...(missionForm.isRealWorld ? {
+                                        borderColor: 'var(--neon-pink)',
+                                        color: 'var(--neon-pink)',
+                                        boxShadow: '0 0 10px var(--neon-pink)'
+                                    } : {})
+                                }}
+                            >
+                                REAL WORLD
+                            </CyberButton>
                         </div>
 
                         <div style={{ marginBottom: '10px' }}>

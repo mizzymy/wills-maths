@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { useGame } from '../../context/GameContext';
 import CyberButton from '../ui/CyberButton';
 import { useNavigate } from 'react-router-dom';
+import ParentGate from './ParentGate';
+import ParentDashboard from './ParentDashboard';
 
 const RewardsScreen = () => {
     const navigate = useNavigate();
     const { missions, redeemMission } = useGame();
     const [tab, setTab] = useState('directives'); // directives, vault
+    const [showParentAuth, setShowParentAuth] = useState(false);
+    const [showParentDash, setShowParentDash] = useState(false);
 
     const activeMissions = missions.filter(m => !m.redeemed);
     const unlockedRewards = missions.filter(m => m.redeemed && m.isRealWorld);
@@ -21,6 +25,20 @@ const RewardsScreen = () => {
             padding: '20px',
             overflowY: 'auto'
         }}>
+            {/* Authenticated Admin View */}
+            {showParentDash && <ParentDashboard onClose={() => setShowParentDash(false)} />}
+
+            {/* Authentication Gate */}
+            {showParentAuth && (
+                <ParentGate
+                    onUnlock={() => {
+                        setShowParentAuth(false);
+                        setShowParentDash(true);
+                    }}
+                    onClose={() => setShowParentAuth(false)}
+                />
+            )}
+
             {/* Header */}
             <div style={{
                 display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center',
@@ -30,13 +48,31 @@ const RewardsScreen = () => {
                     <h2 style={{ margin: 0, color: '#888', fontSize: '0.8rem', letterSpacing: '2px' }}>SYNDICATE REWARDS</h2>
                     <h1 className="neon-text-yellow" style={{ margin: 0, fontSize: '2rem' }}>THE VAULT</h1>
                 </div>
-                <CyberButton
-                    variant="glitch"
-                    style={{ padding: '8px 16px', fontSize: '0.75rem', maxWidth: '120px' }}
-                    onClick={() => navigate('/')}
-                >
-                    &lt; RETURN
-                </CyberButton>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={() => setShowParentAuth(true)}
+                        style={{
+                            background: 'transparent',
+                            border: '1px solid #333',
+                            color: '#666',
+                            padding: '8px',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            display: 'flex', alignItems: 'center', gap: '5px'
+                        }}
+                    >
+                        ⚙️ HANDLER
+                    </button>
+                    <CyberButton
+                        variant="glitch"
+                        style={{ padding: '8px 16px', fontSize: '0.75rem', maxWidth: '120px' }}
+                        onClick={() => navigate('/')}
+                    >
+                        &lt; RETURN
+                    </CyberButton>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -66,7 +102,7 @@ const RewardsScreen = () => {
                             border: '1px dashed #333', borderRadius: '10px', color: '#666'
                         }}>
                             <h3>NO ACTIVE DIRECTIVES</h3>
-                            <p>Request new orders from your Handler (Parents).</p>
+                            <p>Request new orders from your Handler (Parents, Teacher, or Guardian).</p>
                         </div>
                     )}
                     {activeMissions.map(m => {
@@ -145,7 +181,7 @@ const RewardsScreen = () => {
                     {unlockedRewards.length === 0 && (
                         <div style={{ gridColumn: '1 / -1', textAlign: 'center', marginTop: '50px', color: '#444' }}>
                             <h2>VAULT EMPTY</h2>
-                            <p>Complete Real World missions to earn certificates.</p>
+                            <p>Complete missions to earn real world rewards and in-game challenges from your teacher or guardian.</p>
                         </div>
                     )}
                     {unlockedRewards.map(m => (
